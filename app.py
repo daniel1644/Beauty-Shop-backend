@@ -1,15 +1,9 @@
-# from flask import Flask
 
-# app = Flask(__name__)
+from app import create_app
 
-# @app.route('/')
-# def home():
-#     return "Hello Beauty Shop!"
+app = create_app()
 
-# @app.route('/about')
-# def about():
-#     return "This is the Beauty Shop About page."
+if __name__ == "__main__":
+    app.run(debug=True)
 
 
-# if __name__ == '__main__':
-#     app.run(debug=True)
