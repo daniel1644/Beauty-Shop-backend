@@ -6,6 +6,8 @@ from app import db
 class AuthService:
     @staticmethod
     def register_user(username, email, password, role="customer"):
+        if User.query.filter_by(email=email).first():
+            return None  # User with this email already exists
         hashed_password = generate_password_hash(password, method='sha256')
         new_user = User(username=username, email=email, password=hashed_password, role=role)
         db.session.add(new_user)

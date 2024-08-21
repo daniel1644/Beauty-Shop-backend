@@ -1,5 +1,5 @@
 from marshmallow import Schema, fields, validate, validates, ValidationError
-from app.models import User
+from app.models import User, Product, Order, Category, OrderItem
 
 class UserSchema(Schema):
     id = fields.Int(dump_only=True)

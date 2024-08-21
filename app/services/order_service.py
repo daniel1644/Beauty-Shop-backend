@@ -6,13 +6,19 @@ class OrderService:
     def create_order(user_id, product_id, quantity):
         user = User.query.get(user_id)
         product = Product.query.get(product_id)
-        if user and product and product.stock >= quantity:
-            new_order = Order(user_id=user.id, product_id=product.id, quantity=quantity, status='Pending')
-            product.stock -= quantity
-            db.session.add(new_order)
-            db.session.commit()
-            return new_order
-        return None
+        
+        if not user:
+            return None  # User not found
+        if not product:
+            return None  # Product not found
+        if product.stock < quantity:
+            return None  # Not enough stock
+        
+        new_order = Order(user_id=user.id, product_id=product.id, quantity=quantity, status='Pending')
+        product.stock -= quantity
+        db.session.add(new_order)
+        db.session.commit()
+        return new_order
 
     @staticmethod
     def get_all_orders():

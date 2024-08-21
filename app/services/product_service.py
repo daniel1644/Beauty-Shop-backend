@@ -11,7 +11,7 @@ class ProductService:
                 category = Category(name=category_name)
                 db.session.add(category)
                 db.session.commit()
-            new_product = Product(name=name, price=price, stock=stock, category_id=category.id)
+            new_product = Product(name=name, price=price, stock=stock, category=category)
             db.session.add(new_product)
             db.session.commit()
             return new_product
@@ -41,10 +41,14 @@ class ProductService:
         try:
             product = Product.query.get(product_id)
             if product:
-                product.name = data.get('name', product.name)
-                product.price = data.get('price', product.price)
-                product.stock = data.get('stock', product.stock)
-                product.category_id = data.get('category_id', product.category_id)
+                if 'name' in data:
+                    product.name = data['name']
+                if 'price' in data:
+                    product.price = data['price']
+                if 'stock' in data:
+                    product.stock = data['stock']
+                if 'category_id' in data:
+                    product.category_id = data['category_id']
                 db.session.commit()
                 return product
             return None
