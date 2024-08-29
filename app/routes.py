@@ -1,6 +1,5 @@
 # routes.py
-from flask import Blueprint, request, make_response, jsonify
-# from flask_restful import Resource, Api
+from flask import Blueprint, request, make_response, jsonify, session 
 from flask_bcrypt import Bcrypt
 from .models import User, Product, Order, Category, OrderItem
 from . import db
@@ -17,7 +16,7 @@ admin_bp = Blueprint('admin', __name__)
 main_bp = Blueprint('main', __name__)
 user_bp = Blueprint('user', __name__)
 
-# Define route functions for each Blueprint (auth, product, order, admin)
+
 @main_bp.route("/")
 def index():
     return "Welcome to my beauty shop app!"
@@ -25,60 +24,66 @@ def index():
 
 @auth_bp.route('/register', methods=['POST'])
 def register():
-    try:
-        data = request.get_json()
-        schema = UserSchema()
-        result = schema.load(data)
-        
-        # Check if the user already exists
-        if User.query.filter_by(email=result['email']).first():
-            return make_response(jsonify({"error": "User with this email already exists"}), 400)
-
-        # Hash the password
-        hashed_password = bcrypt.generate_password_hash(result['password']).decode('utf-8')
-        
-        new_user = User(
-            username=result['username'],
-            email=result['email'],
-            password=hashed_password,
-            role=result.get('role', 'customer')  # Default role is 'customer'
-        )
-        
-        db.session.add(new_user)
-        db.session.commit()
-
-        access_token = create_access_token(identity=new_user.id)
-        return make_response(jsonify({"message": "User registered successfully", "access_token": access_token}), 201)
-
-    except ValidationError as err:
-        return make_response(jsonify({'error': err.messages}), 400)
-    except Exception as e:
-        return make_response(jsonify({'error': str(e)}), 500)
+    data = request.get_json()
+    username = data['username']
+    email = data['email']
+    password = data['password']
     
+    # Check if the user already exists
+    if User.query.filter_by(email=email).first():
+        return make_response(jsonify({"error": "User with this email already exists"}), 400)
+    
+    # Hash the password
+    hashed_password = bcrypt.generate_password_hash(password).decode('utf-8')
+    
+    new_user = User(
+        username=username,
+        email=email,
+        password=hashed_password,
+        role='customer'  # Default role is 'customer'
+    )
+    
+    db.session.add(new_user)
+    db.session.commit()
+    
+    access_token = create_access_token(identity=new_user.id)
+    return make_response(jsonify({"message": "User registered successfully", "access_token": access_token}), 201)
 
 
 @auth_bp.route('/login', methods=['POST'])
 def login():
     data = request.get_json()
-    email = data.get('email')
-    password = data.get('password')
+    email = data['email']
+    password = data['password']
     
     # Find the user by email
     user = User.query.filter_by(email=email).first()
     
-    if user and bcrypt.check_password_hash(user.password, password):
-        access_token = create_access_token(identity=user.id)
-        return make_response(jsonify({"message": "Login successful", "access_token": access_token}), 200)
-    else:
+    if not user or not bcrypt.check_password_hash(user.password, password):
         return make_response(jsonify({"error": "Invalid credentials"}), 401)
+    
+    access_token = create_access_token(identity=user.id)
+    response = make_response(jsonify({"access_token": access_token}), 200)
+    # Store the access token in a session cookie
+    session['access_token'] = access_token
+    return response
 
 
 @auth_bp.route('/logout', methods=['POST'])
 @jwt_required()
 def logout():
-    # In a real-world application, consider adding the token to a blacklist to prevent reuse.
-    return make_response(jsonify({"message": "Logout successful"}), 200)
+    # Remove the access token from session
+    session.pop('access_token', None)
+    return jsonify({'message': 'Logged out successfully'}), 200
 
+
+# Protected route example
+@auth_bp.route('/protected', methods=['GET'])
+@jwt_required()
+def protected():
+    current_user_id = get_jwt_identity()
+    user = User.query.get(current_user_id)
+    return jsonify(logged_in_as=user.username), 200
 
 
 # # user_bp = Blueprint('user', __name__)
@@ -602,17 +607,3 @@ def get_admin_orders():
 
 
 
-# if __name__ == '__main__':
-#     app = Flask(__name__)
-#     app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///beauty_shop.db'
-#     app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
-#     db.init_app(app)
-#     bcrypt.init_app(app)
-#     api = Api(app)
-#     api.add_resource(Index, '/')
-#     api.add_resource(UserResource, '/users', '/users/<int:id>')
-#     api.add_resource(ProductResource, '/products', '/products/<int:id>')
-#     api.add_resource(CategoryResource, '/categories', '/categories/<int:id>')
-#     api.add_resource(OrderResource, '/orders', '/orders/<int:id>')
-#     api.add_resource(OrderItemResource, '/orders/<int:order_id>/items', '/orders/<int:order_id>/items/<int:item_id>')
-#     app.run(debug=True)

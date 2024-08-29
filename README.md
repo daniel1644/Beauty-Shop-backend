@@ -18,7 +18,7 @@ Set the environment variables: cp .env.example .env and edit the .env file to se
 
 # Running the App
 Run the app: python app.py
-Open the app in your web browser: http://localhost:5000
+Open the app in your web browser: http://localhost:5555
 
 # Environment Variables
 The app uses the following environment variables:
